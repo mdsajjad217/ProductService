@@ -1,0 +1,8 @@
+services:
+  productservice:
+    image: product-service
+    container_name: productservice
+    environment:
+      - ConnectionStrings__ProductDb=Server=host.docker.internal,1433;Database=ProductService;User Id=sa;Password=123456;TrustServerCertificate=True;
+    ports:
+      - "8080:8080"
