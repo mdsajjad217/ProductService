@@ -9,6 +9,7 @@ using ProductService.Infrastructure.Repository.EfProductRepository;
 using ProductService.Infrastructure.Repository.InMemoryProductRepository;
 using ProductService.Domain.Service;
 using ProductService.API.Middleware;
+using ProductService.Application.Option;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,6 +18,10 @@ builder.Services.AddScoped<IProductCommandService, ProductCommandService>();
 builder.Services.AddScoped<IProductRepository, EfProductRepository>();
 
 builder.Services.AddDbContext<ProductDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("ProductDb")));
+
+builder.Services.Configure<KafkaConsumerOptions>(
+    builder.Configuration.GetSection("Kafka")
+);
 
 builder.Services.AddScoped<IProductRepository, EfProductRepository>();
 

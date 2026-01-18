@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using ProductService.Domain.Entities;
+using ProductService.Domain.Event;
 using ProductService.Domain.Repository;
 using ProductService.Infrastructure.Persistence;
 using System;
@@ -24,7 +25,7 @@ namespace ProductService.Infrastructure.Repository.EfProductRepository
             _context.Products.Add(product);
             await _context.SaveChangesAsync();
         }
-        
+
         public async Task UpdateAsync(Product product)
         {
             _context.Products.Update(product);
@@ -39,6 +40,12 @@ namespace ProductService.Infrastructure.Repository.EfProductRepository
         public async Task<Product?> GetByIdAsync(Guid id)
         {
             return await _context.Products.AsNoTracking().FirstOrDefaultAsync(p => p.Id == id);
+        }
+
+        public async Task CreateOrderAsync(Order order)
+        {
+            await _context.Orders.AddAsync(order);
+            await _context.SaveChangesAsync();
         }
     }
 }

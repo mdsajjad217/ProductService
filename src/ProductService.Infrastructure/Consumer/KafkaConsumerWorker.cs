@@ -1,6 +1,9 @@
 ﻿using Confluent.Kafka;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
+using ProductService.Application.Option;
 using ProductService.Domain.Event;
+using ProductService.Domain.Service;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,19 +16,26 @@ namespace ProductService.Infrastructure.Consumer
     public class KafkaConsumerWorker : BackgroundService
     {
         private readonly IConsumer<string, string> _consumer;
+        private readonly IProductCommandService _productCommandService;
 
-        public KafkaConsumerWorker()
+        public KafkaConsumerWorker(IOptions<KafkaConsumerOptions> options, IProductCommandService productCommandService)
         {
+            var kafka = options.Value;
+
             var config = new ConsumerConfig
             {
-                BootstrapServers = "localhost:9092",
-                GroupId = "payment-service-group",
-                AutoOffsetReset = AutoOffsetReset.Earliest,
-                EnableAutoCommit = false
+                BootstrapServers = kafka.BootstrapServers,
+                GroupId = kafka.Consumer.GroupId,
+                EnableAutoCommit = kafka.Consumer.EnableAutoCommit,
+                AutoOffsetReset = Enum.Parse<AutoOffsetReset>(
+                    kafka.Consumer.AutoOffsetReset,
+                    ignoreCase: true)
             };
 
             _consumer = new ConsumerBuilder<string, string>(config).Build();
             _consumer.Subscribe("order-created");
+
+            _productCommandService = productCommandService;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -38,7 +48,7 @@ namespace ProductService.Infrastructure.Consumer
                 {
                     var evt = JsonSerializer.Deserialize<OrderCreatedEvent>(result.Message.Value);
 
-                    //await ProcessEventAsync(evt);
+                    await _productCommandService.CreateOrderAsync(evt);
 
                     _consumer.Commit(result);
                 }

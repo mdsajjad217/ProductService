@@ -1,4 +1,5 @@
 ﻿using ProductService.Domain.Dto;
+using ProductService.Domain.Event;
 
 namespace ProductService.Domain.Service
 {
@@ -6,5 +7,6 @@ namespace ProductService.Domain.Service
     {
         Task<Guid> CreateAsync(CreateProductRequest request);
         Task UpdateAsync(Guid id, UpdateProductRequest request);
+        Task CreateOrderAsync(OrderCreatedEvent order);
     }
 }

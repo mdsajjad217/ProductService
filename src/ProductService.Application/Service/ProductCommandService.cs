@@ -1,5 +1,6 @@
 ﻿using ProductService.Domain.Dto;
 using ProductService.Domain.Entities;
+using ProductService.Domain.Event;
 using ProductService.Domain.Repository;
 using ProductService.Domain.Service;
 using System;
@@ -35,6 +36,13 @@ namespace ProductService.Application.Service
             product.UpdatePrice(request.Price);
             product.UpdateName(request.Name);
             await _repository.UpdateAsync(product);
+        }
+
+        public async Task CreateOrderAsync(OrderCreatedEvent order)
+        {
+            var orderDb = new Order(order.OrderId, order.ProductName, order.Amount, order.CreatedAt);
+
+            await _repository.CreateOrderAsync(orderDb);
         }
     }
 }

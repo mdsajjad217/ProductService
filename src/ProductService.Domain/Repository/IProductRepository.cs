@@ -1,4 +1,5 @@
 ﻿using ProductService.Domain.Entities;
+using ProductService.Domain.Event;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,5 +14,6 @@ namespace ProductService.Domain.Repository
         Task UpdateAsync(Product product);
         Task<IEnumerable<Product>> GetAllAsync();
         Task<Product?> GetByIdAsync(Guid id);
+        Task CreateOrderAsync(Order order);
     }
 }
