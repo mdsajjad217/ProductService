@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ProductService.Application.Option
+namespace ProductService.Domain.Option
 {
     public class KafkaConsumerOptions
     {

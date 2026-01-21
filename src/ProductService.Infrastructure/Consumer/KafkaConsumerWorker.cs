@@ -1,24 +1,27 @@
 ﻿using Confluent.Kafka;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
-using ProductService.Application.Option;
 using ProductService.Domain.Event;
+using ProductService.Domain.Option;
 using ProductService.Domain.Service;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+using static System.Formats.Asn1.AsnWriter;
 
 namespace ProductService.Infrastructure.Consumer
 {
     public class KafkaConsumerWorker : BackgroundService
     {
         private readonly IConsumer<string, string> _consumer;
-        private readonly IProductCommandService _productCommandService;
+        private readonly IServiceScopeFactory _scopeFactory;
 
-        public KafkaConsumerWorker(IOptions<KafkaConsumerOptions> options, IProductCommandService productCommandService)
+        public KafkaConsumerWorker(IOptions<KafkaConsumerOptions> options, IServiceScopeFactory scopeFactory)
         {
             var kafka = options.Value;
 
@@ -35,25 +38,45 @@ namespace ProductService.Infrastructure.Consumer
             _consumer = new ConsumerBuilder<string, string>(config).Build();
             _consumer.Subscribe("order-created");
 
-            _productCommandService = productCommandService;
+            _scopeFactory = scopeFactory;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
+            using var scope = _scopeFactory.CreateScope();
+            var productCommandService = scope.ServiceProvider.GetRequiredService<IProductCommandService>();
+            JsonSerializerOptions JsonOptions =
+            new()
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                PropertyNameCaseInsensitive = true,
+                Converters = { new JsonStringEnumConverter() }
+            };
             while (!stoppingToken.IsCancellationRequested)
             {
                 var result = _consumer.Consume(stoppingToken);
 
                 try
                 {
-                    var evt = JsonSerializer.Deserialize<OrderCreatedEvent>(result.Message.Value);
+                    // First: deserialize string
+                    var json = JsonSerializer.Deserialize<string>(
+                        result.Message.Value,
+                        JsonOptions
+                    );
 
-                    await _productCommandService.CreateOrderAsync(evt);
+                    // Second: deserialize object
+                    var evt = JsonSerializer.Deserialize<OrderCreatedEvent>(
+                        json!,
+                        JsonOptions
+                    );
+
+                    await productCommandService.CreateOrderAsync(evt);
 
                     _consumer.Commit(result);
                 }
                 catch (Exception ex)
                 {
+
                     // DO NOT COMMIT
                     // Retry or send to DLT
                 }

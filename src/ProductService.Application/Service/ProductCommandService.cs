@@ -1,8 +1,10 @@
-﻿using ProductService.Domain.Dto;
+﻿using Microsoft.EntityFrameworkCore;
+using ProductService.Domain.Dto;
 using ProductService.Domain.Entities;
 using ProductService.Domain.Event;
 using ProductService.Domain.Repository;
 using ProductService.Domain.Service;
+using ProductService.Infrastructure.Persistence;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,10 +16,12 @@ namespace ProductService.Application.Service
     public class ProductCommandService : IProductCommandService
     {
         private readonly IProductRepository _repository;
+        private readonly ProductDbContext _context;
 
-        public ProductCommandService(IProductRepository repository)
+        public ProductCommandService(IProductRepository repository, ProductDbContext productDbContext)
         {
             _repository = repository;
+            _context = productDbContext;
         }
 
         public async Task<Guid> CreateAsync(CreateProductRequest request)
@@ -40,9 +44,13 @@ namespace ProductService.Application.Service
 
         public async Task CreateOrderAsync(OrderCreatedEvent order)
         {
+            if (_context.Orders.Any(x => x.OrderId == order.OrderId))
+                return;
+
             var orderDb = new Order(order.OrderId, order.ProductName, order.Amount, order.CreatedAt);
 
             await _repository.CreateOrderAsync(orderDb);
+            await _context.SaveChangesAsync();
         }
     }
 }

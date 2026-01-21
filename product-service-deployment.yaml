@@ -1,19 +1,66 @@
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: product-service
-spec:
-  replicas: 3
-  selector:
-    matchLabels:
-      app: product-service
-  template:
-    metadata:
-      labels:
-        app: product-service
-    spec:
-      containers:
-      - name: product-service
-        image: product-service:latest
-        ports:
-        - containerPort: 8080
+version: "3.9"
+
+services:
+  kafka:
+    image: apache/kafka:latest
+    container_name: kafka
+    ports:
+      - "9092:9092"
+    volumes:
+      - D:/DockerKafka:/var/lib/kafka/data
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+    networks:
+      - app-network
+      
+  productservice:
+    build: ./ProductService
+    container_name: productservice
+    ports:
+      - "8080:8080"
+    depends_on:
+      - kafka
+    environment:
+      ASPNETCORE_URLS: "http://0.0.0.0:8080"
+      ConnectionStrings__ProductDb: "Server=host.docker.internal,1433;Database=ProductService;User Id=sa;Password=123456;TrustServerCertificate=True;"
+      Kafka__BootstrapServers: "kafka:9092"
+      Kafka__Consumer__GroupId: "order-created-group"
+      Kafka__Consumer__AutoOffsetReset: "Earliest"
+      Kafka__Consumer__EnableAutoCommit: "false"
+    networks:
+      - app-network
+      
+  orderservice:
+    build: ./OrderService
+    container_name: orderservice
+    ports:
+      - "8081:8081"
+    depends_on:
+      - kafka
+    environment:
+      ASPNETCORE_URLS: "http://0.0.0.0:8081"
+      ConnectionStrings__OrderDb: "Server=host.docker.internal,1433;Database=OrderService;User Id=sa;Password=123456;TrustServerCertificate=True;"
+      Kafka__BootstrapServers: "kafka:9092"
+      Kafka__Acks: "All"
+      Kafka__EnableIdempotence: "true"
+      Kafka__MessageSendMaxRetries: "3"
+      Kafka__RetryBackoffMs: "100"
+      Kafka__LingerMs: "5"
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge

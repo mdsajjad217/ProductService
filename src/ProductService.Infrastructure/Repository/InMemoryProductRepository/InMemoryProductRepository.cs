@@ -21,6 +21,11 @@ namespace ProductService.Infrastructure.Repository.InMemoryProductRepository
             throw new NotImplementedException();
         }
 
+        public Task CreateOrderAsync(Order order)
+        {
+            throw new NotImplementedException();
+        }
+
         public Task<IEnumerable<Product>> GetAllAsync()
             => Task.FromResult(_products.AsEnumerable());
 

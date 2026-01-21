@@ -44,8 +44,7 @@ namespace ProductService.Infrastructure.Repository.EfProductRepository
 
         public async Task CreateOrderAsync(Order order)
         {
-            await _context.Orders.AddAsync(order);
-            await _context.SaveChangesAsync();
+            await _context.Orders.AddAsync(order);            
         }
     }
 }
