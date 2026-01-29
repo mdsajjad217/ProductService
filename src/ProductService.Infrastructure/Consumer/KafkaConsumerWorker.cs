@@ -76,9 +76,9 @@ namespace ProductService.Infrastructure.Consumer
                 }
                 catch (Exception ex)
                 {
-
                     // DO NOT COMMIT
                     // Retry or send to DLT
+                    //if error during publish then maintain a dead letter queue or log the error
                 }
             }
         }

@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: productservice
+  namespace: apps
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: productservice
+  template:
+    metadata:
+      labels:
+        app: productservice
+    spec:
+      containers:
+      - name: productservice
+        image: mdsajjad217/productservice:latest
+        ports:
+          - containerPort: 8080
+        env:
+          - name: ConnectionStrings__ProductDb
+            value: "Server=host.docker.internal,1433;Database=ProductService;User Id=sa;Password=123456;TrustServerCertificate=True;"
+
+          - name: Kafka__BootstrapServers
+            value: "kafka.infra.svc.cluster.local:9092"
+
+          - name: Kafka__Consumer__GroupId
+            value: "order-created-group"
+
+          - name: Kafka__Consumer__AutoOffsetReset
+            value: "Earliest"
+
+          - name: Kafka__Consumer__EnableAutoCommit
+            value: "false"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: productservice
+  namespace: apps
+spec:
+  selector:
+    app: productservice
+  ports:
+    - port: 8080

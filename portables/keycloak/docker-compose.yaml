@@ -1,0 +1,24 @@
+version: "3.9"
+
+services:
+  keycloak:
+    image: keycloak/keycloak:nightly
+    container_name: keycloak-nightly
+    command: start-dev --import-realm
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    ports:
+      - "8082:8080"
+    volumes:
+      # Persist Keycloak internal data (dev only)
+      - D:/DockerKeycloak/data:/opt/keycloak/data
+
+      # Auto-import realms
+      - D:/DockerKeycloak/realm-import:/opt/keycloak/data/import
+
+      # Custom themes
+      - D:/DockerKeycloak/themes:/opt/keycloak/themes
+
+      # Custom providers (JARs)
+      - D:/DockerKeycloak/providers:/opt/keycloak/providers
